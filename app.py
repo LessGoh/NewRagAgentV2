@@ -82,7 +82,7 @@ def main():
         st.rerun()
     
     # Поле ввода для пользователя
-    if prompt := st.chat_input("Введите ваш вопрос о финансовых стратегиях..."):
+    if prompt := st.chat_input("Введите ваш вопрос..."):
         # Добавление сообщения пользователя
         st.session_state.messages.append({"role": "user", "content": prompt})
         utils.display_message({"role": "user", "content": prompt})
