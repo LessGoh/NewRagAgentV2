@@ -1,97 +1,70 @@
 import requests
 import json
 from typing import Dict, Any, Optional
-from config import Config
+import os
 
 class LlamaIndexClient:
     """Клиент для работы с LlamaIndex API"""
     
     def __init__(self):
-        self.base_url = Config.LLAMA_INDEX_URL.rstrip('/')
-        self.api_key = Config.LLAMA_INDEX_API_KEY
+        self.base_url = os.getenv("LLAMA_INDEX_URL")
+        self.api_key = os.getenv("LLAMA_INDEX_API_KEY")
+        
+        if not self.base_url:
+            raise ValueError("LLAMA_INDEX_URL не найден в переменных окружения")
+        if not self.api_key:
+            raise ValueError("LLAMA_INDEX_API_KEY не найден в переменных окружения")
+            
+        self.base_url = self.base_url.rstrip('/')
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
     
-    def query(self, 
-              query: str, 
-              top_k: int = 5, 
-              similarity_threshold: float = 0.7) -> Dict[str, Any]:
-        """
-        Выполнение запроса к LlamaIndex
-        
-        Args:
-            query: Текст запроса
-            top_k: Количество результатов
-            similarity_threshold: Порог схожести
-            
-        Returns:
-            Ответ от LlamaIndex API
-        """
+    def query(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+        """Выполнение запроса к LlamaIndex"""
         try:
             payload = {
                 "query": query,
-                "top_k": top_k,
-                "similarity_threshold": similarity_threshold
+                "top_k": top_k
             }
             
-            response = requests.post(
+            # Попробуйте разные endpoint пути
+            endpoints_to_try = [
                 f"{self.base_url}/query",
-                headers=self.headers,
-                json=payload,
-                timeout=30
-            )
+                f"{self.base_url}/chat", 
+                f"{self.base_url}/v1/query",
+                f"{self.base_url}"
+            ]
             
-            response.raise_for_status()
-            return response.json()
+            for endpoint in endpoints_to_try:
+                try:
+                    response = requests.post(
+                        endpoint,
+                        headers=self.headers,
+                        json=payload,
+                        timeout=30
+                    )
+                    
+                    if response.status_code == 200:
+                        return {
+                            "response": response.json().get("response", response.text),
+                            "source_nodes": response.json().get("source_nodes", []),
+                            "endpoint_used": endpoint
+                        }
+                        
+                except requests.exceptions.RequestException:
+                    continue
             
-        except requests.exceptions.RequestException as e:
+            return {
+                "error": f"Не удалось подключиться к LlamaIndex API. Проверьте URL: {self.base_url}",
+                "response": None,
+                "source_nodes": []
+            }
+            
+        except Exception as e:
             return {
                 "error": f"Ошибка API запроса: {str(e)}",
                 "response": None,
                 "source_nodes": []
             }
-    
-    def search_indicators(self, 
-                         indicator: str, 
-                         timeframe: Optional[str] = None) -> Dict[str, Any]:
-        """Специализированный поиск по индикаторам"""
-        
-        query_parts = [f"технический индикатор {indicator}"]
-        if timeframe:
-            query_parts.append(f"таймфрейм {timeframe}")
-        
-        query_parts.extend([
-            "торговая стратегия",
-            "условия входа и выхода",
-            "параметры настройки",
-            "бэктестинг результаты"
-        ])
-        
-        query = " ".join(query_parts)
-        return self.query(query, top_k=7)
-    
-    def search_strategies(self, 
-                         strategy_type: str, 
-                         market_condition: Optional[str] = None) -> Dict[str, Any]:
-        """Поиск торговых стратегий"""
-        
-        query_parts = [f"торговая стратегия {strategy_type}"]
-        if market_condition:
-            query_parts.append(f"рыночные условия {market_condition}")
-        
-        query_parts.extend([
-            "риск менеджмент",
-            "исторические результаты",
-            "практическое применение"
-        ])
-        
-        query = " ".join(query_parts)
-        return self.query(query, top_k=8)
-    
-    def search_research(self, topic: str, year_from: int = 2020) -> Dict[str, Any]:
-        """Поиск исследований"""
-        
-        query = f"исследование {topic} год {year_from} методология результаты"
-        return self.query(query, top_k=10)
