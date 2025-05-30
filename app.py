@@ -44,6 +44,21 @@ def main():
     # Боковая панель
     quick_command = utils.create_sidebar()
     
+    # В функции main() добавьте проверку
+    if st.button("🔍 Тест подключения к базе знаний"):
+        try:
+            from utils.llama_client import LlamaIndexClient
+            client = LlamaIndexClient()
+            result = client.query("test query", top_k=1)
+            
+            if result.get("error"):
+                st.error(f"❌ Ошибка: {result['error']}")
+            else:
+                st.success("✅ Подключение к базе знаний работает!")
+                st.json(result)
+        except Exception as e:
+            st.error(f"❌ Ошибка подключения: {e}")
+    
     # Основной интерфейс чата
     if not st.session_state.messages:
         utils.show_welcome()
