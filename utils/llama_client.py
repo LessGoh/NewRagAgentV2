@@ -21,7 +21,7 @@ class LlamaIndexClient:
             "Authorization": f"Bearer {self.api_key}"
         }
     
-    def query(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def query(self, query: str, top_k: int = 30, similarity_threshold: float = 0.6) -> Dict[str, Any]:
         """Выполнение запроса к LlamaIndex"""
         try:
             payload = {
