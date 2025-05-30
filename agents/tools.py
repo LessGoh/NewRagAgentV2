@@ -68,3 +68,28 @@ class FinanceTools:
             
         except Exception as e:
             return f"❌ Ошибка при работе с базой знаний: {str(e)}"
+    
+    def compare_strategies(self, strategy1: str, strategy2: str) -> str:
+        """Сравнение двух торговых стратегий"""
+        return f"🔍 Сравнение {strategy1} vs {strategy2} (тестовый режим)"
+    
+    def analyze_market_conditions(self, market_type: str, analysis_type: str = "technical") -> str:
+        """Анализ стратегий для рыночных условий"""
+        return f"📈 Анализ для {market_type} рынка (тестовый режим)"
+    
+    def find_research_papers(self, topic: str, year_from: int = 2020) -> str:
+        """Поиск научных исследований"""
+        return f"🔬 Поиск исследований по теме: {topic} (тестовый режим)"
+    
+    def get_tools(self):
+        """Возвращает список инструментов для агента"""
+        try:
+            return [
+                FunctionTool.from_defaults(self.search_indicator_strategies),
+                FunctionTool.from_defaults(self.compare_strategies),
+                FunctionTool.from_defaults(self.analyze_market_conditions),
+                FunctionTool.from_defaults(self.find_research_papers)
+            ]
+        except Exception as e:
+            print(f"Ошибка создания инструментов: {e}")
+            return []
